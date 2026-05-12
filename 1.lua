@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local ren = 5 * 60
 
 Players.PlayerAdded:Connect(function(player)
