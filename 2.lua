@@ -1,32 +1,42 @@
--- blox fruit shit test 
-local players = game:Getservice("players")
-local run_service = game:Getservice("runservice")
-local replicated_storage = game:Getservice ("replicatedstorage")
-local user_input_service = game:Getservice("userinputservice")
-local local_player = players.LocalPlayer
-local virtual_user = game:Getservice("virtualuser")
+-- blox fruit test auto farm EZZZ
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
+
+local flags = { auto_quest = true, auto_farm = true }
+local is_running = true
+local connections = {}
 
 local function get_nearest_enemy(name)
     local nearest = nil
     local last_dist = math.huge
-    for _, enemy in inpairs(workspace.Enemies:GetChildren()) do
-        if enemy.Name == name and enemy:FindFirstChild("humanoid") and enemy.Humanoid.Health > 0 and
-enemy:FindFirstChild("humanoidrootpart") then -- credit to @sub2mikael if you use this
-            local dist = (enemy.HumanoidRootPart.Position -
-local_player.Character.HumanoidRootPart.Position).Magnitude
+
+    for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+        if enemy.Name == name
+            and enemy:FindFirstChild("Humanoid")
+            and enemy.Humanoid.Health > 0
+            and enemy:FindFirstChild("HumanoidRootPart") then -- credit to @sub2mikael if you use this
+
+            local dist = (enemy.HumanoidRootPart.Position
+                - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+
             if dist < last_dist then
                 nearest = enemy
                 last_dist = dist
-           end
-       end
-   end
-  return nearest
+            end
+        end
+    end
+
+    return nearest
 end
 
 local function equip_weapon()
-    for _, tool in ipairs(local_player.Backpack:GetChildren()) do
-        if tool:IsA("tool") then
-            local_player.Character.Humanoid:EquipTool(tool)
+    for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
             break
         end
     end
@@ -34,73 +44,47 @@ end
 
 task.spawn(function()
     while is_running do
-      if flags.auto_quest then
-          local quest_ui = local_player.PlayerGui.Main:FindFirstChild("quest")
-          if quest_ui and not quest_ui.Visible then
-              local npc = workspace.NPCs:FindFirstChild("bandit quest giver")
-              if npc and npc:FindFirstChild("humanoidrootpart") then
-                  local_player.Character.HumanoidRootPart.cframe = npc.HumanoidRootPart.cframe *
-cframe.new(0, 0, 3)
-                  replicated_storage.Remotes.CommF_: InvokeServer("startquest", "banditquest1", 1)
-              end
+        if flags.auto_quest then
+            local quest_ui = LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+            if quest_ui and not quest_ui.Visible then
+                local npc = workspace.NPCs:FindFirstChild("Bandit Quest Giver")
+                if npc and npc:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame
+                        * CFrame.new(0, 0, 3)
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", "BanditQuest1", 1)
+                end
+            end
+        end
 
-       end
+        if flags.auto_farm then
+            local target = get_nearest_enemy("Bandit")
+            if target then
+                equip_weapon()
+                LocalPlayer.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame
+                    * CFrame.new(0, 5, 0)
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(0, 0))
+            end
+        end
 
-end
-     if flags.auto farm then
-
-local target get_nearest enemy("bandit")
-
-if target then
-
-equip_weapon()
-
-local player.Character. Humanoid RootPart.cframe
-
-target.HumanoidRootPart.cframe
-
-cframe.new(, 5, 0)
-
-virtual_user: CaptureController()
-
-virtual_user:ClickButton1(vector2.new(0, 0))
-
-end
-
-end
-
-task.wait()
-
-end
-
+        task.wait()
+    end
 end)
 
 local function toggle_ui(input, processed)
-
-if not processed and input.KeyCode enum.KeyCode.RightShift then
-
-for, obj in ipairs(game: GetService("coregui"):GetChildren()) do
-
-if obj: FindFirstChild("main") and obj.Main: IsA("frame") then
-
-obj.Enabled not obj.Enabled
-
+    if not processed and input.KeyCode == Enum.KeyCode.RightShift then
+        for _, obj in ipairs(game:GetService("CoreGui"):GetChildren()) do
+            if obj:FindFirstChild("Main") and obj.Main:IsA("Frame") then
+                obj.Enabled = not obj.Enabled
+            end
+        end
+    end
 end
 
-end
+table.insert(connections, UserInputService.InputBegan:Connect(toggle_ui))
 
-end
-
-end 
-
-table.insert(connections, user_input_service.InputBegan: Connext(toggle_ui))
-
-local_player. Idled: Connect(function()
-
-virtual_user: Button2Down(vector2.new(0, 0), workspace.CurrentCamera.cframe)
-
-task.wait(1)
-
-virtual_user: Button2Up(vector2.new(0, 0), workspace.CurrentCamera.cframe)
-
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
