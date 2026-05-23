@@ -2,32 +2,33 @@ local settings = {
     enabled = true,
     maxDistance = 1500,
     teamCheck = false,
-    visibleCheck = true,
+    visCheck = true,
+    box = true,
+    boxOutline = true,
+    boxColor = Color3.new(1,1,1),
+    name = true,
+    dist = true,
+    hp = true,
+    hpbar = true,
+    hpbarOutline = true,
     textSize = 13,
-    box = {enabled = true, outline = true, color = Color3.new(1,1,1)},
-    name = {enabled = true},
-    dist = {enabled = true},
-    hp = {enabled = true},
-    hpbar = {enabled = true},
-
-    chams = {
-        enabled = false,
-        visibleOnly = false,
-        fill = Color3.fromRGB(255,0,0),
-        outline = Color3.new(1,1,1),
-        transparency = .5
-    }
+    font = 2,
+    chams = false,
+    visOnly = false,
+    chamFill = Color3.fromRGB(255,0,0),
+    chamOutline = Color3.new(1,1,1),
+    chamTransparency = .5
 }
---// service @ esp
+
 local players = game:GetService("Players")
-local runservice = game:GetService("RunService")
+local runService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
-local coregui = game:GetService("CoreGui")
+local coreGui = game:GetService("CoreGui")
 
 local lp = players.LocalPlayer
 local cache = {}
 
-local function create(class, props)
+local function newDrawing(class, props)
     local obj = Drawing.new(class)
 
     for i,v in pairs(props) do
@@ -49,7 +50,7 @@ local function hide(tbl)
     end
 end
 
-local function getColor(hum)
+local function getHpColor(hum)
     local hp = hum.Health / hum.MaxHealth
 
     return Color3.fromRGB(
@@ -59,10 +60,9 @@ local function getColor(hum)
     )
 end
 
-local function visible(part)
-    local origin = camera.CFrame.Position
-
+local function isVisible(part)
     local params = RaycastParams.new()
+
     params.FilterType = Enum.RaycastFilterType.Blacklist
     params.FilterDescendantsInstances = {
         lp.Character,
@@ -70,8 +70,8 @@ local function visible(part)
     }
 
     local ray = workspace:Raycast(
-        origin,
-        (part.Position - origin).Unit * 9999,
+        camera.CFrame.Position,
+        (part.Position - camera.CFrame.Position).Unit * 9999,
         params
     )
 
@@ -90,13 +90,8 @@ local function getBox(char)
         return
     end
 
-    local top = camera:WorldToViewportPoint(
-        head.Position + Vector3.new(0,.5,0)
-    )
-
-    local bottom = camera:WorldToViewportPoint(
-        hrp.Position - Vector3.new(0,3,0)
-    )
+    local top = camera:WorldToViewportPoint(head.Position + Vector3.new(0,.5,0))
+    local bottom = camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,3,0))
 
     local height = math.abs(top.Y - bottom.Y)
     local width = height / 1.8
@@ -111,14 +106,14 @@ local function getBox(char)
     }
 end
 
-local espObject = {}
-espObject.__index = espObject
+local esp = {}
+esp.__index = esp
 
-function espObject:hide()
+function esp:hide()
     hide(self.drawings)
 end
 
-function espObject:remove()
+function esp:remove()
     for _,v in pairs(self.drawings) do
         if typeof(v) == "Instance" then
             v:Destroy()
@@ -128,7 +123,7 @@ function espObject:remove()
     end
 end
 
-function espObject:update()
+function esp:update()
     local plr = self.player
     local char = plr.Character
 
@@ -148,17 +143,13 @@ function espObject:update()
         return self:hide()
     end
 
-    if settings.teamCheck then
-        if plr.Team == lp.Team then
-            return self:hide()
-        end
+    if settings.teamCheck and plr.Team == lp.Team then
+        return self:hide()
     end
 
     local vec, onScreen = camera:WorldToViewportPoint(hrp.Position)
 
-    local dist = math.floor(
-        (camera.CFrame.Position - hrp.Position).Magnitude
-    )
+    local dist = math.floor((camera.CFrame.Position - hrp.Position).Magnitude)
 
     if not onScreen or dist > settings.maxDistance then
         return self:hide()
@@ -170,48 +161,50 @@ function espObject:update()
         return self:hide()
     end
 
-    local isVisible = true
+    local visible = true
 
-    if settings.visibleCheck then
-        isVisible = visible(head)
+    if settings.visCheck then
+        visible = isVisible(head)
     end
 
     local d = self.drawings
 
     d.box.Size = box.size
     d.box.Position = box.position
-    d.box.Color = settings.box.color
-    d.box.Visible = settings.box.enabled
+    d.box.Color = settings.boxColor
+    d.box.Visible = settings.box
 
     d.outline.Size = box.size
     d.outline.Position = box.position
-    d.outline.Visible = settings.box.enabled and settings.box.outline
+    d.outline.Visible = settings.box and settings.boxOutline
 
     d.name.Text = plr.Name
+
     d.name.Position = Vector2.new(
         box.position.X + box.size.X/2,
         box.position.Y - 16
     )
 
-    d.name.Visible = settings.name.enabled
+    d.name.Visible = settings.name
 
     d.dist.Text = dist.." studs"
+
     d.dist.Position = Vector2.new(
         box.position.X + box.size.X/2,
         box.position.Y + box.size.Y + 2
     )
 
-    d.dist.Visible = settings.dist.enabled
+    d.dist.Visible = settings.dist
 
     d.hp.Text = tostring(math.floor(hum.Health))
-    d.hp.Color = getColor(hum)
+    d.hp.Color = getHpColor(hum)
 
     d.hp.Position = Vector2.new(
         box.position.X + box.size.X + 16,
         box.position.Y
     )
 
-    d.hp.Visible = settings.hp.enabled
+    d.hp.Visible = settings.hp
 
     local hp = hum.Health / hum.MaxHealth
     local size = box.size.Y * hp
@@ -223,8 +216,8 @@ function espObject:update()
         box.position.Y + (box.size.Y - size)
     )
 
-    d.hpbar.Color = getColor(hum)
-    d.hpbar.Visible = settings.hpbar.enabled
+    d.hpbar.Color = getHpColor(hum)
+    d.hpbar.Visible = settings.hpbar
 
     d.hpoutline.Size = Vector2.new(4,box.size.Y + 2)
 
@@ -233,23 +226,23 @@ function espObject:update()
         box.position.Y - 1
     )
 
-    d.hpoutline.Visible = settings.hpbar.enabled
+    d.hpoutline.Visible = settings.hpbar and settings.hpbarOutline
 
-    if settings.chams.enabled then
+    if settings.chams then
         d.highlight.Enabled = true
         d.highlight.Adornee = char
 
-        if settings.chams.visibleOnly then
-            d.highlight.FillColor = isVisible and
+        if settings.visOnly then
+            d.highlight.FillColor = visible and
                 Color3.fromRGB(0,255,0)
                 or
                 Color3.fromRGB(255,0,0)
         else
-            d.highlight.FillColor = settings.chams.fill
+            d.highlight.FillColor = settings.chamFill
         end
 
-        d.highlight.OutlineColor = settings.chams.outline
-        d.highlight.FillTransparency = settings.chams.transparency
+        d.highlight.OutlineColor = settings.chamOutline
+        d.highlight.FillTransparency = settings.chamTransparency
     else
         d.highlight.Enabled = false
     end
@@ -266,60 +259,60 @@ local function add(plr)
 
     local drawings = {}
 
-    drawings.box = create("Square", {
+    drawings.box = newDrawing("Square", {
         Thickness = 1,
         Filled = false,
-        Color = Color3.new(1,1,1)
+        Color = settings.boxColor
     })
 
-    drawings.outline = create("Square", {
+    drawings.outline = newDrawing("Square", {
         Thickness = 3,
         Filled = false,
         Color = Color3.new(0,0,0)
     })
 
-    drawings.name = create("Text", {
+    drawings.name = newDrawing("Text", {
         Center = true,
         Outline = true,
-        Font = 2,
+        Font = settings.font,
         Size = settings.textSize,
         Color = Color3.new(1,1,1)
     })
 
-    drawings.dist = create("Text", {
+    drawings.dist = newDrawing("Text", {
         Center = true,
         Outline = true,
-        Font = 2,
+        Font = settings.font,
         Size = settings.textSize,
         Color = Color3.new(1,1,1)
     })
 
-    drawings.hp = create("Text", {
+    drawings.hp = newDrawing("Text", {
         Center = true,
         Outline = true,
-        Font = 2,
+        Font = settings.font,
         Size = settings.textSize
     })
 
-    drawings.hpbar = create("Square", {
+    drawings.hpbar = newDrawing("Square", {
         Filled = true,
         Thickness = 1
     })
 
-    drawings.hpoutline = create("Square", {
+    drawings.hpoutline = newDrawing("Square", {
         Filled = false,
         Thickness = 1,
         Color = Color3.new(0,0,0)
     })
 
     drawings.highlight = Instance.new("Highlight")
-    drawings.highlight.Parent = coregui
+    drawings.highlight.Parent = coreGui
     drawings.highlight.Enabled = false
 
     cache[plr] = setmetatable({
         player = plr,
         drawings = drawings
-    }, espObject)
+    }, esp)
 end
 
 for _,plr in ipairs(players:GetPlayers()) do
@@ -335,7 +328,7 @@ players.PlayerRemoving:Connect(function(plr)
     end
 end)
 
-runservice.RenderStepped:Connect(function()
+runService.RenderStepped:Connect(function()
     if not settings.enabled then
         for _,obj in pairs(cache) do
             obj:hide()
