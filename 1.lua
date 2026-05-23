@@ -18,9 +18,9 @@ local settings = {
         transparency = .5
     }
 }
---## service
+--// service @ esp
 local players = game:GetService("Players")
-local runService = game:GetService("RunService")
+local runservice = game:GetService("RunService")
 local camera = workspace.CurrentCamera
 local coreGui = game:GetService("CoreGui")
 
@@ -335,7 +335,7 @@ players.PlayerRemoving:Connect(function(plr)
     end
 end)
 
-runService.RenderStepped:Connect(function()
+runservice.RenderStepped:Connect(function()
     if not settings.enabled then
         for _,obj in pairs(cache) do
             obj:hide()
