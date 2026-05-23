@@ -22,7 +22,7 @@ local settings = {
 local players = game:GetService("Players")
 local runservice = game:GetService("RunService")
 local camera = workspace.CurrentCamera
-local coreGui = game:GetService("CoreGui")
+local coregui = game:GetService("CoreGui")
 
 local lp = players.LocalPlayer
 local cache = {}
@@ -313,7 +313,7 @@ local function add(plr)
     })
 
     drawings.highlight = Instance.new("Highlight")
-    drawings.highlight.Parent = coreGui
+    drawings.highlight.Parent = coregui
     drawings.highlight.Enabled = false
 
     cache[plr] = setmetatable({
